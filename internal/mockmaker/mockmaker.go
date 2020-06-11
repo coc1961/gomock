@@ -80,25 +80,27 @@ func (mm *MockMaker) CreateMock(filePath, structName string) *MockMaker {
 											dt.Type = mm.processStarExpr(t)
 										}
 									}
-									for _, r := range ft.Results.List {
-										dn := ""
-										if r.Names != nil && len(r.Names) > 0 {
-											dn = r.Names[0].String()
-										}
+									if ft.Results != nil {
+										for _, r := range ft.Results.List {
+											dn := ""
+											if r.Names != nil && len(r.Names) > 0 {
+												dn = r.Names[0].String()
+											}
 
-										dt := &DataType{
-											Name: dn,
-										}
+											dt := &DataType{
+												Name: dn,
+											}
 
-										ff.Returns = append(ff.Returns, dt)
+											ff.Returns = append(ff.Returns, dt)
 
-										switch t := r.Type.(type) {
-										case *ast.SelectorExpr:
-											dt.Type = mm.processSelectorExpr(t)
-										case *ast.StarExpr:
-											dt.Type = mm.processStarExpr(t)
-										case *ast.Ident:
-											dt.Type = t.Name
+											switch t := r.Type.(type) {
+											case *ast.SelectorExpr:
+												dt.Type = mm.processSelectorExpr(t)
+											case *ast.StarExpr:
+												dt.Type = mm.processStarExpr(t)
+											case *ast.Ident:
+												dt.Type = t.Name
+											}
 										}
 									}
 								}
