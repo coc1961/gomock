@@ -6,6 +6,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"go/types"
 	"strings"
 )
 
@@ -74,6 +75,10 @@ func (mm *MockMaker) CreateMock(filePath, structName string) *MockMaker {
 										switch t := p.Type.(type) {
 										case *ast.Ident:
 											dt.Type = t.Name
+										case *ast.ArrayType:
+											dt.Type = types.ExprString(t)
+										case *ast.MapType:
+											dt.Type = types.ExprString(t)
 										case *ast.SelectorExpr:
 											dt.Type = mm.processSelectorExpr(t)
 										case *ast.StarExpr:
@@ -100,6 +105,10 @@ func (mm *MockMaker) CreateMock(filePath, structName string) *MockMaker {
 												dt.Type = mm.processStarExpr(t)
 											case *ast.Ident:
 												dt.Type = t.Name
+											case *ast.ArrayType:
+												dt.Type = types.ExprString(t)
+											case *ast.MapType:
+												dt.Type = types.ExprString(t)
 											}
 										}
 									}
