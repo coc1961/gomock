@@ -36,6 +36,20 @@ func (mm *MockMaker) CreateMock(filePath, structName string) *MockMaker {
 	fs := token.NewFileSet()
 	f, _ := parser.ParseFile(fs, filePath, nil, 0)
 
+	ast.Inspect(f, func(n ast.Node) bool {
+		switch t := n.(type) {
+		// find variable declarations
+		case *ast.TypeSpec:
+			// which are public
+			switch t.Type.(type) {
+			// and are interfaces
+			case *ast.InterfaceType:
+				data_type[t.Name.Name] = "nil"
+			}
+		}
+		return true
+	})
+
 	for _, dec := range f.Decls {
 		if gen, ok := dec.(*ast.GenDecl); ok {
 			if gen.Tok != token.TYPE {
@@ -62,7 +76,6 @@ func (mm *MockMaker) CreateMock(filePath, structName string) *MockMaker {
 
 								if ft, ok := meths.Type.(*ast.FuncType); ok {
 									for _, p := range ft.Params.List {
-
 										dn := ""
 										if p.Names != nil && len(p.Names) > 0 {
 											dn = p.Names[0].String()
@@ -72,18 +85,7 @@ func (mm *MockMaker) CreateMock(filePath, structName string) *MockMaker {
 										}
 										ff.Params = append(ff.Params, dt)
 
-										switch t := p.Type.(type) {
-										case *ast.Ident:
-											dt.Type = t.Name
-										case *ast.ArrayType:
-											dt.Type = types.ExprString(t)
-										case *ast.MapType:
-											dt.Type = types.ExprString(t)
-										case *ast.SelectorExpr:
-											dt.Type = mm.processSelectorExpr(t)
-										case *ast.StarExpr:
-											dt.Type = mm.processStarExpr(t)
-										}
+										dt.Type = types.ExprString(p.Type)
 									}
 									if ft.Results != nil {
 										for _, r := range ft.Results.List {
@@ -98,18 +100,7 @@ func (mm *MockMaker) CreateMock(filePath, structName string) *MockMaker {
 
 											ff.Returns = append(ff.Returns, dt)
 
-											switch t := r.Type.(type) {
-											case *ast.SelectorExpr:
-												dt.Type = mm.processSelectorExpr(t)
-											case *ast.StarExpr:
-												dt.Type = mm.processStarExpr(t)
-											case *ast.Ident:
-												dt.Type = t.Name
-											case *ast.ArrayType:
-												dt.Type = types.ExprString(t)
-											case *ast.MapType:
-												dt.Type = types.ExprString(t)
-											}
+											dt.Type = types.ExprString(r.Type)
 										}
 									}
 								}
@@ -122,28 +113,6 @@ func (mm *MockMaker) CreateMock(filePath, structName string) *MockMaker {
 	}
 
 	return &m
-}
-
-func (mm *MockMaker) processSelectorExpr(t *ast.SelectorExpr) string {
-	var param bytes.Buffer
-	if ident, ok := t.X.(*ast.Ident); ok {
-		param.WriteString(ident.Name)
-	}
-	param.WriteString(".")
-	param.WriteString(t.Sel.Name)
-	return param.String() // context.Context
-}
-
-func (mm *MockMaker) processStarExpr(t *ast.StarExpr) string {
-	var param bytes.Buffer
-	param.WriteString("*")
-	if ident, ok := t.X.(*ast.Ident); ok {
-		param.WriteString(ident.Name)
-	}
-	if expr, ok := t.X.(*ast.SelectorExpr); ok {
-		param.WriteString(mm.processSelectorExpr(expr))
-	}
-	return param.String() // *Message
 }
 
 func (mm *MockMaker) String() string {
@@ -255,6 +224,13 @@ func (mm *MockMaker) instance(s string) string {
 	aster := strings.Contains(s, "*")
 	dt := strings.ReplaceAll(s, "*", "")
 
+	if arr := strings.Split(dt, "."); len(arr) > 1 {
+		tmp := arr[len(arr)-1]
+		if d, ok := data_type[tmp]; ok {
+			dt = d
+			return dt
+		}
+	}
 	if d, ok := data_type[s]; ok {
 		dt = d
 	} else {
