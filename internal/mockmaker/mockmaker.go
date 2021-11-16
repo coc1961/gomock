@@ -7,7 +7,6 @@ import (
 	"go/parser"
 	"go/token"
 	"go/types"
-	"reflect"
 	"strings"
 )
 
@@ -38,8 +37,6 @@ func (mm *MockMaker) CreateMock(filePath, structName string) *MockMaker {
 	f, _ := parser.ParseFile(fs, filePath, nil, 0)
 
 	ast.Inspect(f, func(n ast.Node) bool {
-
-		fmt.Println(reflect.TypeOf(n))
 		switch t := n.(type) {
 		// find variable declarations
 		case *ast.TypeSpec:
