@@ -32,7 +32,7 @@ func (m *TestInterfaceMock) Func1(i int, pt1 t1.T1) (rt1 *t1.T1, xx t1.T1Interfa
 	if m.CallbackFunc1 != nil {
 		return m.CallbackFunc1(i, pt1)
 	}
-	return &t1.T1{}, t1.T1Interface, nil
+	return &t1.T1{}, nil, nil
 }
 
 
