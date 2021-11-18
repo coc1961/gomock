@@ -7,6 +7,7 @@ import (
 	"go/parser"
 	"go/token"
 	"go/types"
+	"os"
 	"strings"
 )
 
@@ -33,12 +34,17 @@ func (mm *MockMaker) CreateMock(filePath, structName string) *MockMaker {
 	}
 	m.StructName = structName
 
+	// find interfaces and set return type to nil
 	for _, s := range findInterface(filePath) {
 		data_type[s] = "nil"
 	}
 
 	fs := token.NewFileSet()
-	f, _ := parser.ParseFile(fs, filePath, nil, 0)
+	f, err := parser.ParseFile(fs, filePath, nil, 0)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 
 	for _, dec := range f.Decls {
 		if gen, ok := dec.(*ast.GenDecl); ok {
@@ -50,7 +56,6 @@ func (mm *MockMaker) CreateMock(filePath, structName string) *MockMaker {
 					if ts.Name.String() != structName {
 						continue
 					}
-
 					if iFace, ok := ts.Type.(*ast.InterfaceType); ok {
 						for _, meths := range iFace.Methods.List {
 							if len(meths.Names) == 0 {
@@ -65,48 +70,8 @@ func (mm *MockMaker) CreateMock(filePath, structName string) *MockMaker {
 								m.Funcs = append(m.Funcs, &ff)
 
 								if ft, ok := meths.Type.(*ast.FuncType); ok {
-									for num, p := range ft.Params.List {
-										if p.Names != nil && len(p.Names) > 0 {
-											for _, n := range p.Names {
-												dt := &DataType{
-													Name: n.String(),
-												}
-												ff.Params = append(ff.Params, dt)
-
-												dt.Type = types.ExprString(p.Type)
-											}
-										} else {
-											dt := &DataType{
-												Name: fmt.Sprintf("name%d", num),
-											}
-											ff.Params = append(ff.Params, dt)
-
-											dt.Type = types.ExprString(p.Type)
-										}
-									}
-									if ft.Results != nil {
-										for _, r := range ft.Results.List {
-											if r.Names != nil && len(r.Names) > 0 {
-												for _, n := range r.Names {
-													dt := &DataType{
-														Name: n.String(),
-													}
-
-													ff.Returns = append(ff.Returns, dt)
-
-													dt.Type = types.ExprString(r.Type)
-												}
-											} else {
-												dt := &DataType{
-													Name: "",
-												}
-												ff.Returns = append(ff.Returns, dt)
-
-												dt.Type = types.ExprString(r.Type)
-											}
-
-										}
-									}
+									mm.AddParams(ft, &ff)
+									mm.AddReturns(ft, &ff)
 								}
 							}
 						}
@@ -115,8 +80,54 @@ func (mm *MockMaker) CreateMock(filePath, structName string) *MockMaker {
 			}
 		}
 	}
-
 	return &m
+}
+func (mm *MockMaker) AddParams(ft *ast.FuncType, ff *Func) {
+	for num, p := range ft.Params.List {
+		if p.Names != nil && len(p.Names) > 0 {
+			for _, n := range p.Names {
+				dt := &DataType{
+					Name: n.String(),
+				}
+				ff.Params = append(ff.Params, dt)
+
+				dt.Type = types.ExprString(p.Type)
+			}
+		} else {
+			dt := &DataType{
+				Name: fmt.Sprintf("name%d", num),
+			}
+			ff.Params = append(ff.Params, dt)
+
+			dt.Type = types.ExprString(p.Type)
+		}
+	}
+}
+
+func (mm *MockMaker) AddReturns(ft *ast.FuncType, ff *Func) {
+	if ft.Results != nil {
+		for _, r := range ft.Results.List {
+			if r.Names != nil && len(r.Names) > 0 {
+				for _, n := range r.Names {
+					dt := &DataType{
+						Name: n.String(),
+					}
+
+					ff.Returns = append(ff.Returns, dt)
+
+					dt.Type = types.ExprString(r.Type)
+				}
+			} else {
+				dt := &DataType{
+					Name: "",
+				}
+				ff.Returns = append(ff.Returns, dt)
+
+				dt.Type = types.ExprString(r.Type)
+			}
+
+		}
+	}
 }
 
 func (mm *MockMaker) String() string {
