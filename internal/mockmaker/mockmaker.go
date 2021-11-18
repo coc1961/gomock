@@ -57,24 +57,7 @@ func (mm *MockMaker) CreateMock(filePath, structName string) *MockMaker {
 						continue
 					}
 					if iFace, ok := ts.Type.(*ast.InterfaceType); ok {
-						for _, meths := range iFace.Methods.List {
-							if len(meths.Names) == 0 {
-								break
-							}
-							for _, name := range meths.Names {
-								ff := Func{
-									FuncName: name.String(),
-									Params:   make([]*DataType, 0),
-									Returns:  make([]*DataType, 0),
-								}
-								m.Funcs = append(m.Funcs, &ff)
-
-								if ft, ok := meths.Type.(*ast.FuncType); ok {
-									mm.AddParams(ft, &ff)
-									mm.AddReturns(ft, &ff)
-								}
-							}
-						}
+						mm.ProcessInterface(iFace, &m)
 					}
 				}
 			}
@@ -82,6 +65,42 @@ func (mm *MockMaker) CreateMock(filePath, structName string) *MockMaker {
 	}
 	return &m
 }
+
+func (mm *MockMaker) ProcessInterface(iFace *ast.InterfaceType, m *MockMaker) {
+	for _, meths := range iFace.Methods.List {
+		if len(meths.Names) == 0 {
+			// interface composition
+			if meths.Type == nil {
+				return
+			}
+			if id, ok := meths.Type.(*ast.Ident); ok {
+				if id.Obj == nil || id.Obj.Decl == nil {
+					return
+				}
+				if te, ok := id.Obj.Decl.(*ast.TypeSpec); ok {
+					if if1, ok := te.Type.(*ast.InterfaceType); ok {
+						mm.ProcessInterface(if1, m)
+					}
+				}
+			}
+			continue
+		}
+		for _, name := range meths.Names {
+			ff := Func{
+				FuncName: name.String(),
+				Params:   make([]*DataType, 0),
+				Returns:  make([]*DataType, 0),
+			}
+			m.Funcs = append(m.Funcs, &ff)
+
+			if ft, ok := meths.Type.(*ast.FuncType); ok {
+				mm.AddParams(ft, &ff)
+				mm.AddReturns(ft, &ff)
+			}
+		}
+	}
+}
+
 func (mm *MockMaker) AddParams(ft *ast.FuncType, ff *Func) {
 	for num, p := range ft.Params.List {
 		if p.Names != nil && len(p.Names) > 0 {

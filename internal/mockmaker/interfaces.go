@@ -4,6 +4,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -11,6 +12,7 @@ import (
 )
 
 type Imports struct {
+	io.Reader
 	Package    string
 	Path       string
 	Interfaces []string
@@ -24,8 +26,14 @@ func findInterface(filePath string) []string {
 	interfaces := getInterfaces(f)
 	_ = interfaces
 
+	if imports == nil {
+		imports = []Imports{}
+	}
 	for i := range imports {
 		filepath.Walk(imports[i].Path, func(path string, info fs.FileInfo, err error) error {
+			if info == nil {
+				return nil
+			}
 			if info.IsDir() {
 				return nil
 			}
