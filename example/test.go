@@ -1,4 +1,6 @@
-package testdata
+package example
+
+import "github.com/coc1961/gomock/example/t1"
 
 type IFace interface{}
 type TestInterface interface {

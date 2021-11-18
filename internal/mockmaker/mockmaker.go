@@ -33,23 +33,12 @@ func (mm *MockMaker) CreateMock(filePath, structName string) *MockMaker {
 	}
 	m.StructName = structName
 
+	for _, s := range findInterface(filePath) {
+		data_type[s] = "nil"
+	}
+
 	fs := token.NewFileSet()
 	f, _ := parser.ParseFile(fs, filePath, nil, 0)
-
-	ast.Inspect(f, func(n ast.Node) bool {
-		//fmt.Printf("%+v\n", n)
-		switch t := n.(type) {
-		// find variable declarations
-		case *ast.TypeSpec:
-			// which are public
-			switch t.Type.(type) {
-			// and are interfaces
-			case *ast.InterfaceType:
-				data_type[t.Name.Name] = "nil"
-			}
-		}
-		return true
-	})
 
 	for _, dec := range f.Decls {
 		if gen, ok := dec.(*ast.GenDecl); ok {
