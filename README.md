@@ -4,36 +4,36 @@
 
 > for example
 
-given the interface `TestInterface`
+> Running 
 
-```go
+```sh
 
-type T1 struct {
-}
-
-type T1Interface interface {
-}
-
-type TestInterface interface {
-	Func1(i int, pt1 t1.T1) (rt1 *t1.T1, xx t1.T1Interface, err error)
-}
+ gomock -s $GOROOT/src/io/io.go -n ReadCloser
 
 ```
 
-Create the mock 
+
+> The Mock Created Is 
 
 ```go
 
-type TestInterfaceMock struct {
-	CallbackFunc1 func(i int, pt1 t1.T1) (rt1 *t1.T1, xx t1.T1Interface, err error)
+type ReadCloserMock struct {
+        CallbackRead func(p []byte) (n int, err error)
+        CallbackClose func() (error)
 }
 
-func (m *TestInterfaceMock) Func1(i int, pt1 t1.T1) (rt1 *t1.T1, xx t1.T1Interface, err error) {
-	if m.CallbackFunc1 != nil {
-		return m.CallbackFunc1(i, pt1)
-	}
-	return &t1.T1{}, nil, nil
+func (m *ReadCloserMock) Read(p []byte) (n int, err error) {
+        if m.CallbackRead != nil {
+                return m.CallbackRead(p)
+        }
+        return int, nil
 }
 
+func (m *ReadCloserMock) Close() (error) {
+        if m.CallbackClose != nil {
+                return m.CallbackClose()
+        }
+        return nil
+}
 
 ```
