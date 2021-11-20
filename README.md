@@ -34,7 +34,7 @@ func NewReadCloserMock() ReadCloserMockInterface {
 // 	var myVar ReadCloser
 // 	mock := NewReadCloserMock()
 // 	mock.Mock().Callbackxxx = func(...)...{} // Modifies the default behavior of the mock function
-// 	myVar = mock // Ok! compatible interface
+// 	myVar = mock // Compatible interface!!
 func (m *ReadCloserMock) Mock() *ReadCloserMock {
 	return m
 }
