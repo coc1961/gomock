@@ -172,7 +172,7 @@ func (mm *MockMaker) String() string {
 	c("// \tvar myVar ", mm.StructName, "\n")
 	c("// \tmock := New", mm.StructName, "Mock()\n")
 	c("// \tmock.Mock().Callbackxxx = func(...)...{} // Modifies the default behavior of the mock function\n")
-	c("// \tmyVar = mock // Ok! compatible interface\n")
+	c("// \tmyVar = mock // Compatible interface!!\n")
 
 	c("func (m *", mm.StructName, "Mock)", " Mock() *", mm.StructName, "Mock {", "\n")
 	c("\treturn m\n")
