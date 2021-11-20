@@ -4,11 +4,16 @@ import (
 	"github.com/coc1961/gomock/example/t1"
 )
 
+type IFace1 interface {
+	IFace
+	Func6(s string) error
+}
+
 type IFace interface {
 	Func5(s string) error
 }
 type TestInterface interface {
-	IFace
+	IFace1
 	Func4(string) error
 	Func3(str1, str2 string) error
 	Func2(arr []int) (IFace, t1.T1Interface, map[string]string, error)
