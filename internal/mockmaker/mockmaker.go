@@ -45,6 +45,9 @@ func (mm *MockMaker) CreateMock(filePath, structName string, addPackage bool) *M
 	mm.AddPackage = addPackage
 	mm.Package = f.Name.Name
 	m.StructName = structName
+	if mm.AddPackage {
+		m.StructName = mm.Package + "." + m.StructName
+	}
 
 	for _, dec := range f.Decls {
 		if gen, ok := dec.(*ast.GenDecl); ok {
