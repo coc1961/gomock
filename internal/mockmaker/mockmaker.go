@@ -8,11 +8,14 @@ import (
 	"go/token"
 	"go/types"
 	"os"
+	"strings"
 )
 
 type MockMaker struct {
 	StructName string
 	Funcs      []*Func
+	AddPackage bool
+	Package    string
 }
 
 type Func struct {
@@ -26,12 +29,11 @@ type DataType struct {
 	Type string
 }
 
-func (mm *MockMaker) CreateMock(filePath, structName string) *MockMaker {
-
+func (mm *MockMaker) CreateMock(filePath, structName string, addPackage bool) *MockMaker {
 	m := MockMaker{
-		Funcs: make([]*Func, 0),
+		Funcs:      make([]*Func, 0),
+		AddPackage: addPackage,
 	}
-	m.StructName = structName
 
 	fs := token.NewFileSet()
 	f, err := parser.ParseFile(fs, filePath, nil, 0)
@@ -39,6 +41,10 @@ func (mm *MockMaker) CreateMock(filePath, structName string) *MockMaker {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+
+	mm.AddPackage = addPackage
+	mm.Package = f.Name.Name
+	m.StructName = structName
 
 	for _, dec := range f.Decls {
 		if gen, ok := dec.(*ast.GenDecl); ok {
@@ -104,7 +110,7 @@ func (mm *MockMaker) AddParams(ft *ast.FuncType, ff *Func) {
 				}
 				ff.Params = append(ff.Params, dt)
 
-				dt.Type = types.ExprString(p.Type)
+				dt.Type = mm.GetType(p.Type)
 			}
 		} else {
 			dt := &DataType{
@@ -112,7 +118,7 @@ func (mm *MockMaker) AddParams(ft *ast.FuncType, ff *Func) {
 			}
 			ff.Params = append(ff.Params, dt)
 
-			dt.Type = types.ExprString(p.Type)
+			dt.Type = mm.GetType(p.Type)
 		}
 	}
 }
@@ -128,7 +134,7 @@ func (mm *MockMaker) AddReturns(ft *ast.FuncType, ff *Func) {
 
 					ff.Returns = append(ff.Returns, dt)
 
-					dt.Type = types.ExprString(r.Type)
+					dt.Type = mm.GetType(r.Type)
 				}
 			} else {
 				dt := &DataType{
@@ -137,11 +143,30 @@ func (mm *MockMaker) AddReturns(ft *ast.FuncType, ff *Func) {
 
 				ff.Returns = append(ff.Returns, dt)
 
-				dt.Type = types.ExprString(r.Type)
+				dt.Type = mm.GetType(r.Type)
 			}
 
 		}
 	}
+}
+
+func (mm *MockMaker) GetType(e ast.Expr) string {
+	str := types.ExprString(e)
+
+	if mm.AddPackage {
+		switch t := e.(type) {
+		case *ast.SelectorExpr:
+			if !strings.Contains(str, ".") {
+				str = mm.Package + "." + str
+			}
+		case *ast.Ident:
+			if t.Obj != nil && !strings.Contains(str, ".") {
+				str = mm.Package + "." + str
+			}
+		}
+	}
+
+	return str
 }
 
 func (mm *MockMaker) String() string {
@@ -156,13 +181,13 @@ func (mm *MockMaker) String() string {
 			str.WriteString(s1)
 		}
 	}
-	c("// Interface compatible with ", mm.StructName, " that contains\n// the Mock function to access the Mock instance\n")
+	c("// Interface compatible with ", mm.StructName, " that contains\n// the Mock function to access the Mock instance.\n")
 	c("type ", mm.StructName, "MockInterface interface {\n")
 	c("\t", mm.StructName, "\n")
 	c("\tMock() *", mm.StructName, "Mock\n")
 	c("}\n")
 
-	c("\n// function to create the mock\n")
+	c("\n// function to create the mock.\n")
 	c("func New", mm.StructName, "Mock() ", mm.StructName, "MockInterface {", "\n")
 	c("\treturn &", mm.StructName, "Mock{}\n")
 	c("}\n")
@@ -172,13 +197,13 @@ func (mm *MockMaker) String() string {
 	c("// \tvar myVar ", mm.StructName, "\n")
 	c("// \tmock := New", mm.StructName, "Mock()\n")
 	c("// \tmock.Mock().Callbackxxx = func(...)...{} // Modifies the default behavior of the mock function\n")
-	c("// \tmyVar = mock // Compatible interface!!\n")
+	c("// \tmyVar = mock // Compatible interface!!.\n")
 
 	c("func (m *", mm.StructName, "Mock)", " Mock() *", mm.StructName, "Mock {", "\n")
 	c("\treturn m\n")
 	c("}\n")
 
-	c("\n// Mock for ", mm.StructName, " interface\n")
+	c("\n// Mock for ", mm.StructName, " interface.\n")
 	c("type ", mm.StructName, "Mock struct {\n")
 	for _, f := range mm.Funcs {
 		c("\tCallback", f.FuncName, " func(")
@@ -204,7 +229,7 @@ func (mm *MockMaker) String() string {
 	}
 	c("}\n\n")
 	for _, f := range mm.Funcs {
-		c("// ", f.FuncName, " function\n")
+		c("// ", f.FuncName, " function.\n")
 		c("func (m *", mm.StructName, "Mock) ", f.FuncName, "(")
 		coma := ""
 		for i, p := range f.Params {
