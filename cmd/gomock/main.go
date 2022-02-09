@@ -9,9 +9,9 @@ import (
 )
 
 func main() {
-	var src = flag.String("s", "", "source go file")
-	var name = flag.String("n", "", "interface name")
-	var addPackage = flag.Bool("p", false, "(Optional) add package name in local objects")
+	src := flag.String("s", "", "source go file")
+	name := flag.String("n", "", "interface name")
+	addPackage := flag.Bool("p", false, "(Optional) add package name in local objects")
 
 	flag.Parse()
 

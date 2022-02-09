@@ -12,6 +12,7 @@ type IFace1 interface {
 type IFace interface {
 	Func5(s string) error
 }
+
 type TestInterface interface {
 	IFace1
 	Func4(string) error

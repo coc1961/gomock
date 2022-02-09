@@ -145,7 +145,6 @@ func (mm *MockMaker) AddReturns(ft *ast.FuncType, ff *Func) {
 
 				dt.Type = mm.GetType(r.Type)
 			}
-
 		}
 	}
 }
@@ -155,18 +154,40 @@ func (mm *MockMaker) GetType(e ast.Expr) string {
 
 	if mm.AddPackage {
 		switch t := e.(type) {
+		case *ast.MapType:
+			return "map[" + mm.GetType(t.Key) + "]" + mm.GetType(t.Value)
+		case *ast.Ellipsis:
+			str = "..." + mm.GetType(t.Elt)
+		case *ast.StarExpr:
+			str = "*" + mm.GetType(t.X)
 		case *ast.SelectorExpr:
 			if !strings.Contains(str, ".") {
 				str = mm.Package + "." + str
 			}
 		case *ast.Ident:
-			if t.Obj != nil && !strings.Contains(str, ".") {
+			if !mm.isBasic(t.Name) && !strings.Contains(str, ".") {
 				str = mm.Package + "." + str
 			}
+		case *ast.ArrayType:
+			str = "[]" + mm.GetType(t.Elt)
 		}
 	}
 
 	return str
+}
+
+func (mm *MockMaker) isBasic(typ string) bool {
+	basicTypes := []string{
+		"string", "bool", "int8", "uint8", "int16",
+		"uint16", "int32", "uint32", "int64", "uint64", "int", "uint",
+		"uintptr", "float32", "float64", "complex64", "complex128", "error",
+	}
+	for _, s := range basicTypes {
+		if typ == s || typ == "*"+typ {
+			return true
+		}
+	}
+	return false
 }
 
 func (mm *MockMaker) String() string {
