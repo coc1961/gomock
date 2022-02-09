@@ -45,9 +45,6 @@ func (mm *MockMaker) CreateMock(filePath, structName string, addPackage bool) *M
 	mm.AddPackage = addPackage
 	mm.Package = f.Name.Name
 	m.StructName = structName
-	if mm.AddPackage {
-		m.StructName = mm.Package + "." + m.StructName
-	}
 
 	for _, dec := range f.Decls {
 		if gen, ok := dec.(*ast.GenDecl); ok {
@@ -206,7 +203,11 @@ func (mm *MockMaker) String() string {
 		}
 	}
 	c("// Interface compatible with ", mm.StructName, " that contains\n// the Mock function to access the Mock instance.\n")
-	c("type ", mm.StructName, "MockInterface interface {\n")
+	if mm.AddPackage {
+		c("type ", mm.Package+"."+mm.StructName, "MockInterface interface {\n")
+	} else {
+		c("type ", mm.StructName, "MockInterface interface {\n")
+	}
 	c("\t", mm.StructName, "\n")
 	c("\tMock() *", mm.StructName, "Mock\n")
 	c("}\n")
