@@ -9,8 +9,9 @@ import (
 )
 
 func main() {
-	var src = flag.String("s", "", "source go file")
-	var name = flag.String("n", "", "interface name")
+	src := flag.String("s", "", "source go file")
+	name := flag.String("n", "", "interface name")
+	addPackage := flag.Bool("p", false, "(Optional) add package name in local objects")
 
 	flag.Parse()
 
@@ -32,6 +33,6 @@ func main() {
 	}
 
 	mm := mockmaker.MockMaker{}
-	x := mm.CreateMock(*src, *name)
+	x := mm.CreateMock(*src, *name, *addPackage)
 	fmt.Fprint(os.Stdout, x.String())
 }
